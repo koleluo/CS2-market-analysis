@@ -14,10 +14,6 @@ from src.models import SkinAnalysis, SkinMarketData
 
 log = logging.getLogger(__name__)
 
-_anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
-_openai_key = os.getenv("OPENAI_API_KEY", "")
-_openai_base = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-_openai_model = os.getenv("OPENAI_MODEL", "gpt-4o")
 
 
 def _pct(current: float | None, old: float | None) -> float | None:
@@ -114,17 +110,19 @@ async def analyze_skin(data: SkinMarketData) -> SkinAnalysis:
 
 
 async def _call_ai(system: str, user: str) -> str:
-    if _anthropic_key:
-        return await _call_anthropic(system, user)
-    if _openai_key:
-        return await _call_openai(system, user)
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
+    openai_key = os.getenv("OPENAI_API_KEY", "")
+    if anthropic_key:
+        return await _call_anthropic(system, user, anthropic_key)
+    if openai_key:
+        return await _call_openai(system, user, openai_key)
     raise RuntimeError("No AI API key configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY.")
 
 
-async def _call_anthropic(system: str, user: str) -> str:
+async def _call_anthropic(system: str, user: str, api_key: str) -> str:
     import anthropic
 
-    client = anthropic.AsyncAnthropic(api_key=_anthropic_key)
+    client = anthropic.AsyncAnthropic(api_key=api_key)
     msg = await client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=1024,
@@ -134,12 +132,15 @@ async def _call_anthropic(system: str, user: str) -> str:
     return msg.content[0].text
 
 
-async def _call_openai(system: str, user: str) -> str:
+async def _call_openai(system: str, user: str, api_key: str) -> str:
     import openai
 
-    client = openai.AsyncOpenAI(api_key=_openai_key, base_url=_openai_base)
+    client = openai.AsyncOpenAI(
+        api_key=api_key,
+        base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+    )
     resp = await client.chat.completions.create(
-        model=_openai_model,
+        model=os.getenv("OPENAI_MODEL", "gpt-4o"),
         messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": user},

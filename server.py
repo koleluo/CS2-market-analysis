@@ -12,18 +12,19 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-load_dotenv()
+_root = Path(__file__).parent
+load_dotenv(_root / ".env")
 
 from api.routes import router
 
 app = FastAPI(title="CS2 Skin Tracker", version="1.0.0")
 app.include_router(router)
 
-_static = Path("webui/static")
+_static = _root / "webui" / "static"
 if _static.exists():
     app.mount("/static", StaticFiles(directory=str(_static)), name="static")
 
-_index = Path("webui/index.html")
+_index = _root / "webui" / "index.html"
 
 
 @app.get("/", response_class=HTMLResponse)

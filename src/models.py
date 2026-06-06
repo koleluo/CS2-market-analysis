@@ -39,6 +39,7 @@ class SkinMarketData(BaseModel):
     price_7d_ago: float | None = None
     price_30d_ago: float | None = None
 
+    image_url: str | None = None
     data_sources: list[str] = Field(default_factory=list)
 
 
@@ -63,6 +64,7 @@ class SkinAnalysis(BaseModel):
     float_insight: str = ""
     summary: str = ""
 
+    image_url: str | None = None
     data_sources: list[str] = Field(default_factory=list)
 
 

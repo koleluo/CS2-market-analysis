@@ -70,6 +70,7 @@ async def fetch_skin(market_hash_name: str) -> SkinMarketData:
         result.csfloat_min_float = stats["min_float"]
         result.csfloat_listing_count = stats["listing_count"]
         result.csfloat_lowest_price = stats["lowest_price"]
+        result.image_url = stats.get("image_url")
         result.data_sources.append("CSFloat")
 
     # Buff

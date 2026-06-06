@@ -1,7 +1,6 @@
 """FastAPI REST routes for the web UI."""
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 from datetime import date
@@ -104,33 +103,3 @@ def get_report(report_date: str):
     return JSONResponse(json.loads(path.read_text()))
 
 
-_image_cache: dict[str, str] = {}
-
-@router.get("/skin-image/{market_hash_name:path}")
-async def get_skin_image(market_hash_name: str):
-    if market_hash_name in _image_cache:
-        return {"url": _image_cache[market_hash_name]}
-
-    import urllib.parse
-    import httpx
-
-    encoded = urllib.parse.quote(market_hash_name)
-    url = (
-        f"https://steamcommunity.com/market/search/render/"
-        f"?query={encoded}&appid=730&norender=1&count=1"
-    )
-    headers = {"User-Agent": "Mozilla/5.0 (compatible; CS2SkinTracker/1.0)"}
-    try:
-        async with httpx.AsyncClient(headers=headers, timeout=10) as client:
-            r = await client.get(url)
-            data = r.json()
-            results = data.get("results", [])
-            if results:
-                icon = results[0].get("asset_description", {}).get("icon_url", "")
-                if icon:
-                    cdn = f"https://community.cloudflare.steamstatic.com/economy/image/{icon}/360fx360f"
-                    _image_cache[market_hash_name] = cdn
-                    return {"url": cdn}
-    except Exception:
-        pass
-    return {"url": None}

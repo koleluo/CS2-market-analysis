@@ -512,19 +512,15 @@ function renderDashboard(report) {
 
 loadLatestReport();
 
-// ── Lazy skin images ──────────────────────────────────────────
-async function loadSkinImages(skins) {
+// ── Skin images ───────────────────────────────────────────────
+function loadSkinImages(skins) {
   for (const s of skins) {
-    const key = btoa(s.market_hash_name).replace(/=/g, '');
+    if (!s.image_url) continue;
+    const key = s.market_hash_name.replace(/[^a-z0-9]/gi, '_');
     const el = document.getElementById(`img-${key}`);
     if (!el) continue;
-    try {
-      const { url } = await api('GET', `/skin-image/${encodeURIComponent(s.market_hash_name)}`);
-      if (url) {
-        el.innerHTML = `<img src="${url}" alt="${s.market_hash_name}"
-          onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span class=\\'fallback\\'>🔫</span>')" />`;
-      }
-    } catch {}
+    el.innerHTML = `<img src="${s.image_url}" alt="${s.market_hash_name}"
+      onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span class=\\'fallback\\'>🔫</span>')" />`;
   }
 }
 
@@ -661,6 +657,7 @@ async function loadHistoryDetail(d) {
   });
 
   $('detail-cards').innerHTML = skins.map(skinCard).join('');
+  loadSkinImages(skins);
   drawer.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>

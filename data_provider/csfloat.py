@@ -56,10 +56,14 @@ async def get_listings(market_hash_name: str, limit: int = 50) -> list[dict]:
         return []
 
 
+_STEAM_CDN = "https://community.cloudflare.steamstatic.com/economy/image"
+
+
 def derive_float_stats(listings: list[dict]) -> dict:
-    """Compute avg/min float and listing count from raw listings."""
+    """Compute avg/min float, listing count, and image URL from raw listings."""
     floats = []
     prices = []
+    icon_url = None
     for item in listings:
         item_info = item.get("item", {})
         f = item_info.get("float_value")
@@ -68,10 +72,15 @@ def derive_float_stats(listings: list[dict]) -> dict:
             floats.append(float(f))
         if p is not None:
             prices.append(float(p) / 100)  # CSFloat prices in cents
+        if icon_url is None:
+            raw_icon = item_info.get("icon_url", "")
+            if raw_icon:
+                icon_url = f"{_STEAM_CDN}/{raw_icon}/360fx360f"
 
     return {
         "listing_count": len(listings),
         "avg_float": round(sum(floats) / len(floats), 6) if floats else None,
         "min_float": round(min(floats), 6) if floats else None,
         "lowest_price": min(prices) if prices else None,
+        "image_url": icon_url,
     }

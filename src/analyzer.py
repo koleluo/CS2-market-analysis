@@ -105,6 +105,7 @@ async def analyze_skin(data: SkinMarketData) -> SkinAnalysis:
         catalysts=parsed.get("catalysts", []),
         float_insight=parsed.get("float_insight", ""),
         summary=parsed.get("summary", ""),
+        image_url=data.image_url,
         data_sources=data.data_sources,
     )
 

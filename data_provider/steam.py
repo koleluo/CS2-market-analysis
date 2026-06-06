@@ -27,6 +27,8 @@ HEADERS = {
 }
 
 _last_call: float = 0.0
+_DELAY = 5.0
+_MAX_RETRIES = 3
 
 
 async def _rate_limit() -> None:
@@ -34,8 +36,8 @@ async def _rate_limit() -> None:
     import time
 
     elapsed = time.monotonic() - _last_call
-    if elapsed < 3.0:
-        await asyncio.sleep(3.0 - elapsed)
+    if elapsed < _DELAY:
+        await asyncio.sleep(_DELAY - elapsed)
     _last_call = time.monotonic()
 
 
@@ -47,25 +49,32 @@ async def get_price_overview(market_hash_name: str) -> dict | None:
         log.debug("steam overview cache hit: %s", market_hash_name)
         return cached
 
-    await _rate_limit()
     encoded = urllib.parse.quote(market_hash_name)
     url = (
         f"https://steamcommunity.com/market/priceoverview/"
         f"?appid={APP_ID}&currency={CURRENCY}&market_hash_name={encoded}"
     )
-    try:
-        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
-            r = await client.get(url)
-            r.raise_for_status()
-            data = r.json()
-            if not data.get("success"):
-                log.warning("Steam overview not successful for %s", market_hash_name)
+    for attempt in range(1, _MAX_RETRIES + 1):
+        await _rate_limit()
+        try:
+            async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+                r = await client.get(url)
+                if r.status_code == 429:
+                    wait = 10.0 * attempt
+                    log.warning("Steam rate limited for %s, waiting %.0fs (attempt %d)", market_hash_name, wait, attempt)
+                    await asyncio.sleep(wait)
+                    continue
+                r.raise_for_status()
+                data = r.json()
+                if not data.get("success"):
+                    log.warning("Steam overview not successful for %s", market_hash_name)
+                    return None
+                cache.set(cache_key, data)
+                return data
+        except Exception as exc:
+            log.error("Steam overview error for %s (attempt %d): %s", market_hash_name, attempt, exc)
+            if attempt == _MAX_RETRIES:
                 return None
-            cache.set(cache_key, data)
-            return data
-    except Exception as exc:
-        log.error("Steam overview error for %s: %s", market_hash_name, exc)
-        return None
 
 
 def _parse_price(raw: str | None) -> float | None:

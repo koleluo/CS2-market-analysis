@@ -100,6 +100,6 @@ def get_report(report_date: str):
     path = REPORTS_DIR / f"{report_date}.json"
     if not path.exists():
         raise HTTPException(404, f"No report for {report_date}")
-    return JSONResponse(json.loads(path.read_text()))
+    return JSONResponse(json.loads(path.read_text(encoding="utf-8")))
 
 

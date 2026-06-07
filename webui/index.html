@@ -777,9 +777,28 @@ async function renderHistory() {
 }
 renderHistory();
 
+// Cache of market_hash_name -> image_url built from all available reports
+const _imgCache = {};
+async function _warmImageCache() {
+  if (Object.keys(_imgCache).length) return;
+  const { dates } = await api('GET', '/reports');
+  for (const d of (dates || [])) {
+    const r = await api('GET', `/reports/${d}`);
+    for (const s of (r.skins || [])) {
+      if (s.image_url && !_imgCache[s.market_hash_name]) {
+        _imgCache[s.market_hash_name] = s.image_url;
+      }
+    }
+  }
+}
+
 async function loadHistoryDetail(d) {
+  await _warmImageCache();
   const report = await api('GET', `/reports/${d}`);
-  const skins = report.skins || [];
+  // Backfill image_url from cache for old reports that predate the feature
+  const skins = (report.skins || []).map(s => ({
+    ...s, image_url: s.image_url || _imgCache[s.market_hash_name] || null
+  }));
   const drawer = $('detail-drawer');
   drawer.style.display = 'block';
   $('detail-title').textContent = `Report — ${d}`;

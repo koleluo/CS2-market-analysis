@@ -275,6 +275,56 @@
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
     .pulse { animation: pulse 1.2s ease-in-out infinite; }
 
+    /* ── Skin detail drawer ────────────────────────────────── */
+    .drawer-backdrop {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none;
+      transition: opacity var(--transition);
+    }
+    .drawer-backdrop.open { opacity: 1; pointer-events: all; }
+    .drawer-panel {
+      position: fixed; top: 0; right: 0; bottom: 0; z-index: 201;
+      width: 420px; max-width: 100vw;
+      background: #131e30;
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      transform: translateX(100%);
+      transition: transform 300ms cubic-bezier(0.4,0,0.2,1);
+    }
+    .drawer-panel.open { transform: translateX(0); }
+    .drawer-panel::-webkit-scrollbar { width: 4px; }
+    .drawer-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .drawer-img-zone {
+      height: 200px;
+      background: linear-gradient(145deg, #0d1b2e 0%, #172040 60%, #0f1929 100%);
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .drawer-img-zone::after {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 110%, rgba(59,130,246,0.15) 0%, transparent 65%);
+    }
+    .stat-pill {
+      background: rgba(30,41,59,0.8); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 16px; text-align: center;
+      flex: 1;
+    }
+    .stat-pill-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
+    .stat-pill-value { font-size: 16px; font-weight: 700; }
+    .risk-item, .catalyst-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 8px 12px; border-radius: 7px; margin-bottom: 6px;
+      font-size: 12.5px; line-height: 1.5;
+    }
+    .risk-item { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.15); color: #fca5a5; }
+    .catalyst-item { background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.15); color: #86efac; }
+    .drawer-section { padding: 16px 20px; border-bottom: 1px solid rgba(51,65,85,0.4); }
+    .drawer-section:last-child { border-bottom: none; }
+    .drawer-section-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 12px; }
+
     /* ── Page transitions ──────────────────────────────────── */
     .page { display: none; }
     .page.active { display: block; animation: fadeIn 180ms ease; }
@@ -459,6 +509,117 @@
 
 </div><!-- /max-w -->
 
+<!-- ── Skin detail drawer ─────────────────────────────────────── -->
+<div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+<div class="drawer-panel" id="drawer-panel">
+  <div class="drawer-img-zone" id="drawer-img-zone">
+    <span id="drawer-img-placeholder" style="font-size:56px;opacity:0.12">🔫</span>
+  </div>
+
+  <!-- Header -->
+  <div style="padding:16px 20px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+    <div style="min-width:0">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap">
+        <span id="drawer-wear-badge" class="wear-badge" style="position:static;font-size:10px"></span>
+        <span id="drawer-signal-badge" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;letter-spacing:0.03em"></span>
+      </div>
+      <div id="drawer-name" style="font-size:14px;font-weight:700;line-height:1.35;word-break:break-word"></div>
+    </div>
+    <button onclick="closeDrawer()" style="flex-shrink:0;width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:rgba(30,41,59,0.6);color:var(--text-2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all var(--transition)" onmouseover="this.style.background='rgba(51,65,85,0.8)'" onmouseout="this.style.background='rgba(30,41,59,0.6)'">×</button>
+  </div>
+
+  <!-- Price row -->
+  <div class="drawer-section" style="border-bottom:none;padding-bottom:8px">
+    <div style="display:flex;gap:8px">
+      <div class="stat-pill">
+        <div class="stat-pill-label">Price</div>
+        <div class="stat-pill-value" id="drawer-price" style="color:var(--gold)"></div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-label">7d Change</div>
+        <div class="stat-pill-value" id="drawer-chg7"></div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-label">30d Change</div>
+        <div class="stat-pill-value" id="drawer-chg30"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Score + targets -->
+  <div class="drawer-section">
+    <div class="drawer-section-title">Signal</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <div class="stat-pill" style="text-align:left">
+        <div class="stat-pill-label">Score</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <div style="flex:1;height:6px;border-radius:3px;background:rgba(51,65,85,0.6);overflow:hidden">
+            <div id="drawer-score-bar" style="height:100%;border-radius:3px;transition:width 0.6s ease"></div>
+          </div>
+          <span id="drawer-score-val" style="font-size:14px;font-weight:700;min-width:28px;text-align:right"></span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="stat-pill">
+        <div class="stat-pill-label">Buy Target</div>
+        <div class="stat-pill-value" id="drawer-buy-target" style="color:#22C55E"></div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-label">Sell Target</div>
+        <div class="stat-pill-value" id="drawer-sell-target" style="color:#EF4444"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Float -->
+  <div class="drawer-section" id="drawer-float-section">
+    <div class="drawer-section-title">Float Data</div>
+    <div class="float-bar-track" style="height:5px;border-radius:3px;margin-bottom:8px">
+      <div class="float-marker" id="drawer-float-marker" style="top:-5px;width:4px;height:15px"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="stat-pill">
+        <div class="stat-pill-label">Avg Float</div>
+        <div class="stat-pill-value" id="drawer-avg-float" style="font-size:13px;font-variant-numeric:tabular-nums"></div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-label">Min Float</div>
+        <div class="stat-pill-value" id="drawer-min-float" style="font-size:13px;font-variant-numeric:tabular-nums"></div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-label">Listings</div>
+        <div class="stat-pill-value" id="drawer-listings"></div>
+      </div>
+    </div>
+    <div id="drawer-float-insight" style="margin-top:10px;font-size:12px;color:var(--text-2);line-height:1.6;padding:10px 12px;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);border-radius:7px"></div>
+  </div>
+
+  <!-- AI Summary -->
+  <div class="drawer-section">
+    <div class="drawer-section-title">AI Summary</div>
+    <p id="drawer-summary" style="font-size:13px;color:var(--text-2);line-height:1.65"></p>
+  </div>
+
+  <!-- Risks -->
+  <div class="drawer-section" id="drawer-risks-section">
+    <div class="drawer-section-title">⚠️ Risks</div>
+    <div id="drawer-risks"></div>
+  </div>
+
+  <!-- Catalysts -->
+  <div class="drawer-section" id="drawer-catalysts-section">
+    <div class="drawer-section-title">✨ Catalysts</div>
+    <div id="drawer-catalysts"></div>
+  </div>
+
+  <!-- Sources -->
+  <div class="drawer-section">
+    <div class="drawer-section-title">Data Sources</div>
+    <div id="drawer-sources" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+  </div>
+</div>
+
 <script>
 /* ── State ───────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
@@ -499,6 +660,115 @@ function wearInfo(wear) {
   return [wear?.slice(0,2)?.toUpperCase() || '?', 'wear-UN'];
 }
 
+/* ── Drawer ──────────────────────────────────────────────────── */
+function openDrawer(s) {
+  const fPrice = v => v != null ? `$${v.toFixed(2)}` : '—';
+  const fPct   = v => v != null ? `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` : '—';
+  const fFloat = v => v != null ? v.toFixed(6) : '—';
+
+  // Image
+  const imgZone = $('drawer-img-zone');
+  $('drawer-img-placeholder').style.display = 'block';
+  const existingImg = imgZone.querySelector('img');
+  if (existingImg) existingImg.remove();
+  if (s.image_url) {
+    const img = document.createElement('img');
+    img.src = s.image_url;
+    img.style.cssText = 'max-width:80%;max-height:180px;object-fit:contain;position:relative;z-index:1;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.6))';
+    img.onload = () => { $('drawer-img-placeholder').style.display = 'none'; };
+    img.onerror = () => {};
+    imgZone.appendChild(img);
+  }
+
+  // Wear badge
+  const [wearLabel, wearCls] = wearInfo(s.wear);
+  const wearBadge = $('drawer-wear-badge');
+  wearBadge.textContent = (s.market_hash_name.startsWith('★') ? '★ ' : '') + wearLabel;
+  wearBadge.className = `wear-badge ${wearCls}`;
+
+  // Signal badge
+  const sigBadge = $('drawer-signal-badge');
+  sigBadge.textContent = s.signal;
+  sigBadge.className = `sig-${s.signal}`;
+  sigBadge.style.cssText = 'font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;letter-spacing:0.03em';
+
+  $('drawer-name').textContent = s.market_hash_name;
+
+  // Price
+  $('drawer-price').textContent = fPrice(s.current_price);
+  const chg7 = $('drawer-chg7');
+  chg7.textContent = fPct(s.change_7d_pct);
+  chg7.style.color = s.change_7d_pct == null ? 'var(--text-2)' : s.change_7d_pct >= 0 ? '#22C55E' : '#EF4444';
+  const chg30 = $('drawer-chg30');
+  chg30.textContent = fPct(s.change_30d_pct);
+  chg30.style.color = s.change_30d_pct == null ? 'var(--text-2)' : s.change_30d_pct >= 0 ? '#22C55E' : '#EF4444';
+
+  // Score bar
+  const score = s.score ?? 50;
+  $('drawer-score-val').textContent = score;
+  const barColor = score >= 65 ? '#22C55E' : score >= 40 ? '#F59E0B' : '#EF4444';
+  $('drawer-score-bar').style.cssText = `width:${score}%;background:${barColor};height:100%;border-radius:3px`;
+
+  // Targets
+  $('drawer-buy-target').textContent  = s.buy_target  ? fPrice(s.buy_target)  : '—';
+  $('drawer-sell-target').textContent = s.sell_target ? fPrice(s.sell_target) : '—';
+
+  // Float
+  const hasFloat = s.csfloat_avg_float != null;
+  $('drawer-float-section').style.display = hasFloat ? '' : 'none';
+  if (hasFloat) {
+    $('drawer-float-marker').style.left = `${(s.csfloat_avg_float * 100).toFixed(1)}%`;
+    $('drawer-avg-float').textContent = fFloat(s.csfloat_avg_float);
+    $('drawer-min-float').textContent = fFloat(s.csfloat_min_float);
+    $('drawer-listings').textContent  = s.csfloat_listing_count ?? '—';
+    $('drawer-float-insight').textContent = s.float_insight || '';
+    $('drawer-float-insight').style.display = s.float_insight ? '' : 'none';
+  }
+
+  // Summary
+  $('drawer-summary').textContent = s.summary || 'No analysis available.';
+
+  // Risks
+  const risks = s.risks || [];
+  $('drawer-risks-section').style.display = risks.length ? '' : 'none';
+  $('drawer-risks').innerHTML = risks.map(r => `<div class="risk-item"><span style="flex-shrink:0">▸</span><span>${r}</span></div>`).join('');
+
+  // Catalysts
+  const cats = s.catalysts || [];
+  $('drawer-catalysts-section').style.display = cats.length ? '' : 'none';
+  $('drawer-catalysts').innerHTML = cats.map(c => `<div class="catalyst-item"><span style="flex-shrink:0">▸</span><span>${c}</span></div>`).join('');
+
+  // Sources
+  $('drawer-sources').innerHTML = (s.data_sources || []).map(src =>
+    `<span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:5px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);color:var(--secondary)">${src}</span>`
+  ).join('');
+
+  $('drawer-panel').scrollTop = 0;
+  $('drawer-backdrop').classList.add('open');
+  $('drawer-panel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDrawer() {
+  $('drawer-backdrop').classList.remove('open');
+  $('drawer-panel').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+// Global skin lookup for drawer (covers dashboard + history detail)
+const _skinLookup = {};
+function _registerSkins(skins) { skins.forEach(s => { _skinLookup[s.market_hash_name] = s; }); }
+
+// Delegate clicks from any skin card anywhere on page
+document.addEventListener('click', e => {
+  const card = e.target.closest('.skin-card[data-mhn]');
+  if (!card) return;
+  const skin = _skinLookup[card.dataset.mhn];
+  if (skin) openDrawer(skin);
+});
+
 /* ── Skin card ───────────────────────────────────────────────── */
 function skinCard(s) {
   const key = s.market_hash_name.replace(/[^a-z0-9]/gi, '_');
@@ -510,7 +780,7 @@ function skinCard(s) {
   const chgColor = chg7 == null ? 'var(--text-3)' : chg7 >= 0 ? '#22C55E' : '#EF4444';
 
   return `
-  <div class="skin-card" data-signal="${s.signal}" data-name="${s.market_hash_name.toLowerCase()}">
+  <div class="skin-card" data-signal="${s.signal}" data-name="${s.market_hash_name.toLowerCase()}" data-mhn="${s.market_hash_name.replace(/"/g,'&quot;')}">
     <div class="card-img-zone">
       <span class="wear-badge ${wearCls}">${isKnife ? '★ ' : ''}${wearLabel}</span>
       <span class="score-badge">${s.score}</span>
@@ -619,6 +889,7 @@ function renderDashboard(report) {
     return;
   }
 
+  _registerSkins(currentSkins);
   $('cards-grid').innerHTML = currentSkins.map(skinCard).join('');
   filterCards(currentFilter);
   loadSkinImages(currentSkins);
@@ -836,6 +1107,7 @@ async function loadHistoryDetail(d) {
     },
   });
 
+  _registerSkins(skins);
   $('detail-cards').innerHTML = skins.map(skinCard).join('');
   loadSkinImages(skins);
   drawer.scrollIntoView({ behavior: 'smooth', block: 'start' });

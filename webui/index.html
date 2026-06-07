@@ -5,158 +5,477 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CS2 Market Analysis</title>
   <link rel="icon" type="image/webp" href="/static/favicon.webp"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+
   <style>
-    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .pulse { animation: pulse-dot 1.2s infinite; }
-    .float-bar-gradient {
-      background: linear-gradient(90deg, #ef4444 0%, #f97316 25%, #eab308 50%, #84cc16 75%, #22c55e 100%);
+    /* ── Design tokens ─────────────────────────────────────── */
+    :root {
+      --bg-base:      #0F172A;
+      --bg-surface:   #1E293B;
+      --bg-elevated:  #243350;
+      --bg-card:      #1A2744;
+      --border:       #334155;
+      --border-hover: #475569;
+      --primary:      #3B82F6;
+      --primary-glow: rgba(59,130,246,0.25);
+      --secondary:    #60A5FA;
+      --gold:         #F59E0B;
+      --gold-glow:    rgba(245,158,11,0.2);
+      --green:        #22C55E;
+      --red:          #EF4444;
+      --text:         #FFFFFF;
+      --text-2:       #94A3B8;
+      --text-3:       #64748B;
+      --radius:       10px;
+      --transition:   200ms cubic-bezier(0.4,0,0.2,1);
     }
-    .skin-card img { transition: transform 0.2s; }
-    .skin-card:hover img { transform: scale(1.06); }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-base);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 13px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Scrollbar ─────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-base); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+    /* ── Navbar glass ──────────────────────────────────────── */
+    .navbar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(15,23,42,0.85);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border-bottom: 1px solid rgba(51,65,85,0.6);
+    }
+
+    /* ── Nav link ──────────────────────────────────────────── */
+    .nav-link {
+      position: relative; padding: 6px 14px; border-radius: 7px;
+      font-size: 13px; font-weight: 500; color: var(--text-2);
+      cursor: pointer; border: none; background: none;
+      transition: color var(--transition), background var(--transition);
+    }
+    .nav-link:hover { color: var(--text); background: rgba(51,65,85,0.6); }
+    .nav-link.active { color: var(--text); background: rgba(59,130,246,0.15); }
+    .nav-link.active::after {
+      content: ''; position: absolute; bottom: -1px; left: 50%;
+      transform: translateX(-50%); width: 20px; height: 2px;
+      background: var(--primary); border-radius: 2px;
+    }
+
+    /* ── Hero ──────────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(135deg, #0f1f3d 0%, #0f172a 40%, #1a1040 100%);
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 60% 50%, rgba(59,130,246,0.12) 0%, transparent 70%),
+                  radial-gradient(ellipse 40% 40% at 20% 80%, rgba(139,92,246,0.08) 0%, transparent 60%);
+    }
+    .hero-grid {
+      position: absolute; inset: 0; opacity: 0.03;
+      background-image: linear-gradient(var(--border) 1px, transparent 1px),
+                        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* ── Stat card ─────────────────────────────────────────── */
+    .stat-card {
+      background: rgba(30,41,59,0.7);
+      border: 1px solid rgba(51,65,85,0.5);
+      backdrop-filter: blur(8px);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      transition: border-color var(--transition), transform var(--transition);
+    }
+    .stat-card:hover { border-color: var(--border-hover); transform: translateY(-1px); }
+
+    /* ── Filter tabs ───────────────────────────────────────── */
+    .filter-bar {
+      display: flex; align-items: center; gap: 4px;
+      background: rgba(30,41,59,0.5);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 4px;
+    }
+    .filter-btn {
+      padding: 6px 16px; border-radius: 7px; border: none;
+      font-size: 12.5px; font-weight: 600; cursor: pointer;
+      transition: all var(--transition); color: var(--text-2); background: none;
+    }
+    .filter-btn:hover { color: var(--text); background: rgba(51,65,85,0.5); }
+    .filter-btn.active { background: var(--primary); color: #fff; box-shadow: 0 0 12px rgba(59,130,246,0.35); }
+
+    /* ── Search ────────────────────────────────────────────── */
+    .search-wrap { position: relative; }
+    .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+    .search-input {
+      width: 100%; background: rgba(30,41,59,0.8);
+      border: 1px solid var(--border); border-radius: 9px;
+      color: var(--text); padding: 9px 14px 9px 38px;
+      font-size: 13px; outline: none; font-family: inherit;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .search-input::placeholder { color: var(--text-3); }
+    .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+
+    /* ── Cards grid ────────────────────────────────────────── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 1280px) { .cards-grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (max-width: 1024px) { .cards-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 640px)  { .cards-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ── Skin card ─────────────────────────────────────────── */
+    .skin-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(51,65,85,0.7);
+      border-radius: 12px; overflow: hidden; cursor: pointer;
+      transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
+      position: relative;
+    }
+    .skin-card:hover {
+      transform: translateY(-3px) scale(1.01);
+      border-color: rgba(59,130,246,0.45);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(59,130,246,0.15), 0 4px 20px var(--primary-glow);
+    }
+    .card-img-zone {
+      height: 136px; position: relative; overflow: hidden;
+      background: linear-gradient(145deg, #0d1b2e 0%, #172040 50%, #0f1929 100%);
+      display: flex; align-items: center; justify-content: center; padding: 12px;
+    }
+    .card-img-zone::after {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 120%, rgba(59,130,246,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .skin-card:hover .card-img-zone::after {
+      background: radial-gradient(ellipse at 50% 120%, rgba(59,130,246,0.18) 0%, transparent 70%);
+    }
+    .skin-card img { transition: transform var(--transition); }
+    .skin-card:hover img { transform: scale(1.07); }
+
+    /* ── Wear badge ────────────────────────────────────────── */
+    .wear-badge {
+      position: absolute; top: 8px; left: 8px; z-index: 1;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.04em;
+      padding: 2px 6px; border-radius: 4px; line-height: 1.5;
+    }
+    .wear-FN { background: #22C55E; color: #000; }
+    .wear-MW { background: #38BDF8; color: #000; }
+    .wear-FT { background: #FACC15; color: #000; }
+    .wear-WW { background: #FB923C; color: #000; }
+    .wear-BS { background: #EF4444; color: #fff; }
+    .wear-UN { background: #64748B; color: #fff; }
+
+    /* ── Score badge ───────────────────────────────────────── */
+    .score-badge {
+      position: absolute; top: 8px; right: 8px; z-index: 1;
+      font-size: 10px; font-weight: 700; padding: 2px 6px;
+      border-radius: 4px; background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.08); color: var(--text-2);
+    }
+
+    /* ── Float bar ─────────────────────────────────────────── */
+    .float-bar-track {
+      height: 3px; border-radius: 2px; overflow: visible; position: relative;
+      background: linear-gradient(90deg,#ef4444 0%,#f97316 25%,#eab308 50%,#84cc16 75%,#22c55e 100%);
+    }
+    .float-marker {
+      position: absolute; top: -4px; width: 3px; height: 11px;
+      background: #fff; border-radius: 2px; transform: translateX(-50%);
+      box-shadow: 0 0 4px rgba(255,255,255,0.8);
+    }
+
+    /* ── Signal badge ──────────────────────────────────────── */
+    .sig-BUY  { background: rgba(34,197,94,0.12);  color: #22C55E;  border: 1px solid rgba(34,197,94,0.25); }
+    .sig-HOLD { background: rgba(245,158,11,0.12); color: #F59E0B;  border: 1px solid rgba(245,158,11,0.25); }
+    .sig-SELL { background: rgba(239,68,68,0.12);  color: #EF4444;  border: 1px solid rgba(239,68,68,0.25); }
+
+    /* ── Skeleton ──────────────────────────────────────────── */
+    @keyframes shimmer {
+      0%   { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, rgba(30,41,59,0) 0%, rgba(51,65,85,0.4) 50%, rgba(30,41,59,0) 100%);
+      background-size: 400px 100%;
+      animation: shimmer 1.4s ease infinite;
+      background-color: rgba(30,41,59,0.8);
+      border-radius: 6px;
+    }
+
+    /* ── Btn ───────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 18px; border-radius: 8px; font-size: 13px;
+      font-weight: 600; cursor: pointer; border: none;
+      transition: all var(--transition); font-family: inherit;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #2563EB; box-shadow: 0 4px 14px rgba(59,130,246,0.4); }
+    .btn-ghost {
+      background: rgba(30,41,59,0.6); color: var(--text-2);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--border-hover); }
+    .btn-danger { background: transparent; color: #EF4444; border: 1px solid rgba(239,68,68,0.3); }
+    .btn-danger:hover { background: rgba(239,68,68,0.1); }
+
+    /* ── Table ─────────────────────────────────────────────── */
+    .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .data-table th {
+      text-align: left; padding: 11px 16px;
+      font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-3); background: rgba(15,23,42,0.5);
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td { padding: 13px 16px; border-bottom: 1px solid rgba(51,65,85,0.4); font-size: 13px; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tbody tr { transition: background var(--transition); cursor: pointer; }
+    .data-table tbody tr:hover td { background: rgba(51,65,85,0.2); }
+
+    /* ── Input ─────────────────────────────────────────────── */
+    .cs-input {
+      background: rgba(30,41,59,0.8); border: 1px solid var(--border);
+      border-radius: 9px; color: var(--text); padding: 10px 14px;
+      font-size: 13px; outline: none; font-family: inherit; width: 100%;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .cs-input::placeholder { color: var(--text-3); }
+    .cs-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+
+    /* ── Watchlist row ─────────────────────────────────────── */
+    .watchlist-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 16px; border-radius: 10px;
+      background: rgba(30,41,59,0.6); border: 1px solid rgba(51,65,85,0.5);
+      margin-bottom: 6px;
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .watchlist-row:hover { border-color: var(--border-hover); background: rgba(36,51,80,0.8); }
+
+    /* ── Pulse dot ─────────────────────────────────────────── */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+    .pulse { animation: pulse 1.2s ease-in-out infinite; }
+
+    /* ── Page transitions ──────────────────────────────────── */
+    .page { display: none; }
+    .page.active { display: block; animation: fadeIn 180ms ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    /* ── Divider ───────────────────────────────────────────── */
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+    /* ── Section label ─────────────────────────────────────── */
+    .section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-3); margin-bottom: 12px;
+    }
+
+    /* ── Chart card ────────────────────────────────────────── */
+    .chart-card {
+      background: rgba(30,41,59,0.6); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+
+    /* ── Empty state ───────────────────────────────────────── */
+    .empty { text-align: center; padding: 64px 20px; color: var(--text-3); }
+    .empty-icon { font-size: 44px; margin-bottom: 16px; opacity: 0.35; }
+    .empty h3 { font-size: 15px; color: var(--text-2); margin-bottom: 6px; }
+    .empty p { font-size: 12.5px; line-height: 1.7; }
   </style>
 </head>
-<body class="bg-[#0f1923] text-[#e8edf2] min-h-screen text-sm antialiased">
+<body>
 
 <!-- ── Navbar ─────────────────────────────────────────────────── -->
-<header class="bg-[#1a2332] border-b border-[#2a3f55] sticky top-0 z-50">
-  <div class="max-w-screen-xl mx-auto px-5 h-14 flex items-center gap-4">
-    <a href="#" class="flex items-center gap-2 font-bold text-[15px] shrink-0 mr-2">
-      <img src="/static/favicon.webp" class="w-7 h-7" alt="logo"/>
-      CS2 Market
+<nav class="navbar">
+  <div style="max-width:1400px;margin:0 auto;padding:0 24px;height:56px;display:flex;align-items:center;gap:8px">
+    <a href="#" style="display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;color:#fff;text-decoration:none;margin-right:16px;flex-shrink:0">
+      <img src="/static/favicon.webp" style="width:30px;height:30px" alt="logo"/>
+      <span>CS2 Market</span>
     </a>
-    <nav class="flex items-center gap-0.5 flex-1">
-      <button class="nav-btn px-3 py-1.5 rounded text-[13px] font-medium text-[#8fa3b3] hover:text-white hover:bg-[#243447] transition-colors" data-page="dashboard">Market</button>
-      <button class="nav-btn px-3 py-1.5 rounded text-[13px] font-medium text-[#8fa3b3] hover:text-white hover:bg-[#243447] transition-colors" data-page="watchlist">Watchlist</button>
-      <button class="nav-btn px-3 py-1.5 rounded text-[13px] font-medium text-[#8fa3b3] hover:text-white hover:bg-[#243447] transition-colors" data-page="history">History</button>
-    </nav>
-    <div class="flex items-center gap-3 shrink-0">
-      <div class="flex items-center gap-1.5 text-xs text-[#8fa3b3]">
-        <span id="status-dot" class="w-2 h-2 rounded-full bg-[#8fa3b3] inline-block"></span>
+
+    <div style="display:flex;align-items:center;gap:2px;flex:1">
+      <button class="nav-link active" data-page="dashboard">Market</button>
+      <button class="nav-link" data-page="watchlist">Watchlist</button>
+      <button class="nav-link" data-page="history">History</button>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-2)">
+        <span id="status-dot" style="width:7px;height:7px;border-radius:50%;background:var(--text-3);display:inline-block;flex-shrink:0"></span>
         <span id="status-label">Idle</span>
       </div>
-      <button id="run-btn" class="bg-[#e2a829] hover:bg-[#c99424] disabled:opacity-50 text-black font-bold text-xs px-4 py-2 rounded transition-colors">
-        ▶&nbsp;Run Analysis
+      <button id="run-btn" class="btn btn-primary" style="padding:7px 18px;font-size:13px">
+        <svg width="11" height="11" viewBox="0 0 10 10" fill="currentColor"><path d="M1 1l8 4-8 4V1z"/></svg>
+        Run Analysis
       </button>
     </div>
   </div>
-</header>
+</nav>
 
-<!-- ── Content ────────────────────────────────────────────────── -->
-<div class="max-w-screen-xl mx-auto px-5 py-6">
+<!-- ── Pages ──────────────────────────────────────────────────── -->
+<div style="max-width:1400px;margin:0 auto;padding:0 24px">
 
-  <!-- ── Dashboard ──────────────────────────────────────────── -->
-  <div id="dashboard" class="page">
+  <!-- ════════ Dashboard ════════ -->
+  <div id="dashboard" class="page active">
 
-    <!-- Stats bar -->
-    <div class="grid grid-cols-4 gap-3 mb-6">
-      <div class="bg-[#1e2c3a] border border-[#2a3f55] rounded-lg px-5 py-4">
-        <div class="text-[10px] font-semibold uppercase tracking-widest text-[#8fa3b3] mb-1.5">Analyzed</div>
-        <div class="text-2xl font-bold" id="stat-total">—</div>
-      </div>
-      <div class="bg-[#1e2c3a] border border-[#2a3f55] rounded-lg px-5 py-4">
-        <div class="text-[10px] font-semibold uppercase tracking-widest text-[#8fa3b3] mb-1.5">Buy</div>
-        <div class="text-2xl font-bold text-green-400" id="stat-buy">—</div>
-      </div>
-      <div class="bg-[#1e2c3a] border border-[#2a3f55] rounded-lg px-5 py-4">
-        <div class="text-[10px] font-semibold uppercase tracking-widest text-[#8fa3b3] mb-1.5">Hold</div>
-        <div class="text-2xl font-bold text-yellow-400" id="stat-hold">—</div>
-      </div>
-      <div class="bg-[#1e2c3a] border border-[#2a3f55] rounded-lg px-5 py-4">
-        <div class="text-[10px] font-semibold uppercase tracking-widest text-[#8fa3b3] mb-1.5">Sell</div>
-        <div class="text-2xl font-bold text-red-400" id="stat-sell">—</div>
+    <!-- Hero -->
+    <div class="hero" style="margin:0 -24px;padding:36px 24px 32px">
+      <div class="hero-grid"></div>
+      <div style="position:relative;z-index:1;max-width:1400px;margin:0 auto">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:20px">
+          <div>
+            <div style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--secondary);margin-bottom:8px">CS2 Skin Intelligence</div>
+            <h1 style="font-size:28px;font-weight:800;line-height:1.15;margin-bottom:8px">Market Analysis</h1>
+            <p style="color:var(--text-2);font-size:13.5px;max-width:480px;line-height:1.6">AI-powered price signals for CS2 skins. Aggregated from Steam, CSFloat, Skinport and Buff163.</p>
+          </div>
+          <!-- Mini stat pills in hero -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px 18px;text-align:center">
+              <div style="font-size:22px;font-weight:800;color:#22C55E" id="hero-buy">—</div>
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(34,197,94,0.7);margin-top:2px">Buy</div>
+            </div>
+            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 18px;text-align:center">
+              <div style="font-size:22px;font-weight:800;color:#F59E0B" id="hero-hold">—</div>
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(245,158,11,0.7);margin-top:2px">Hold</div>
+            </div>
+            <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 18px;text-align:center">
+              <div style="font-size:22px;font-weight:800;color:#EF4444" id="hero-sell">—</div>
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(239,68,68,0.7);margin-top:2px">Sell</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Filter tabs -->
-    <div class="flex items-center border-b border-[#2a3f55] mb-5 gap-0">
-      <button class="filter-tab px-4 py-2.5 text-[13px] font-semibold border-b-2 border-[#e2a829] text-white transition-colors" data-filter="all" onclick="filterCards('all')">All</button>
-      <button class="filter-tab px-4 py-2.5 text-[13px] font-semibold border-b-2 border-transparent text-[#8fa3b3] hover:text-white transition-colors" data-filter="BUY" onclick="filterCards('BUY')">Buy</button>
-      <button class="filter-tab px-4 py-2.5 text-[13px] font-semibold border-b-2 border-transparent text-[#8fa3b3] hover:text-white transition-colors" data-filter="HOLD" onclick="filterCards('HOLD')">Hold</button>
-      <button class="filter-tab px-4 py-2.5 text-[13px] font-semibold border-b-2 border-transparent text-[#8fa3b3] hover:text-white transition-colors" data-filter="SELL" onclick="filterCards('SELL')">Sell</button>
-      <span class="ml-auto text-xs text-[#8fa3b3]" id="report-date"></span>
-    </div>
+    <div style="padding-top:24px">
+      <!-- Controls row -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+        <div class="filter-bar">
+          <button class="filter-btn active" data-filter="all" onclick="filterCards('all')">All Skins</button>
+          <button class="filter-btn" data-filter="BUY" onclick="filterCards('BUY')">🟢 Buy</button>
+          <button class="filter-btn" data-filter="HOLD" onclick="filterCards('HOLD')">🟡 Hold</button>
+          <button class="filter-btn" data-filter="SELL" onclick="filterCards('SELL')">🔴 Sell</button>
+        </div>
+        <div class="search-wrap" style="flex:1;max-width:280px">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input class="search-input" id="card-search" placeholder="Search skins…" oninput="searchCards(this.value)"/>
+        </div>
+        <span style="margin-left:auto;font-size:12px;color:var(--text-3)" id="report-date"></span>
+      </div>
 
-    <!-- Cards grid -->
-    <div id="cards-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-      <div class="col-span-full text-center py-20 text-[#8fa3b3]">
-        <div class="text-5xl mb-4 opacity-30">🎮</div>
-        <div>No report yet — click <strong class="text-white">Run Analysis</strong> to get started.</div>
+      <!-- Cards grid -->
+      <div class="cards-grid" id="cards-grid">
+        <!-- Skeleton placeholders -->
+        <div class="skin-card" style="pointer-events:none" id="skel-1">
+          <div class="card-img-zone"><div class="skeleton" style="width:100%;height:100%;position:absolute;inset:0;opacity:0.4"></div></div>
+          <div style="padding:12px"><div class="skeleton" style="height:10px;width:50%;margin-bottom:8px"></div><div class="skeleton" style="height:13px;width:80%;margin-bottom:8px"></div><div class="skeleton" style="height:16px;width:40%"></div></div>
+        </div>
+        <div class="skin-card" style="pointer-events:none" id="skel-2">
+          <div class="card-img-zone"><div class="skeleton" style="width:100%;height:100%;position:absolute;inset:0;opacity:0.4"></div></div>
+          <div style="padding:12px"><div class="skeleton" style="height:10px;width:50%;margin-bottom:8px"></div><div class="skeleton" style="height:13px;width:80%;margin-bottom:8px"></div><div class="skeleton" style="height:16px;width:40%"></div></div>
+        </div>
+        <div class="skin-card" style="pointer-events:none" id="skel-3">
+          <div class="card-img-zone"><div class="skeleton" style="width:100%;height:100%;position:absolute;inset:0;opacity:0.4"></div></div>
+          <div style="padding:12px"><div class="skeleton" style="height:10px;width:50%;margin-bottom:8px"></div><div class="skeleton" style="height:13px;width:80%;margin-bottom:8px"></div><div class="skeleton" style="height:16px;width:40%"></div></div>
+        </div>
+        <div class="skin-card" style="pointer-events:none" id="skel-4">
+          <div class="card-img-zone"><div class="skeleton" style="width:100%;height:100%;position:absolute;inset:0;opacity:0.4"></div></div>
+          <div style="padding:12px"><div class="skeleton" style="height:10px;width:50%;margin-bottom:8px"></div><div class="skeleton" style="height:13px;width:80%;margin-bottom:8px"></div><div class="skeleton" style="height:16px;width:40%"></div></div>
+        </div>
+        <div class="skin-card" style="pointer-events:none" id="skel-5">
+          <div class="card-img-zone"><div class="skeleton" style="width:100%;height:100%;position:absolute;inset:0;opacity:0.4"></div></div>
+          <div style="padding:12px"><div class="skeleton" style="height:10px;width:50%;margin-bottom:8px"></div><div class="skeleton" style="height:13px;width:80%;margin-bottom:8px"></div><div class="skeleton" style="height:16px;width:40%"></div></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ── Watchlist ───────────────────────────────────────────── -->
-  <div id="watchlist" class="page hidden">
-    <div class="mb-5">
-      <h1 class="text-lg font-bold">Watchlist</h1>
-      <p class="text-xs text-[#8fa3b3] mt-1">Skins tracked in every analysis run</p>
+  <!-- ════════ Watchlist ════════ -->
+  <div id="watchlist" class="page">
+    <div style="padding:28px 0 20px">
+      <h1 style="font-size:20px;font-weight:800;margin-bottom:4px">Watchlist</h1>
+      <p style="color:var(--text-2);font-size:13px">Skins tracked in every analysis run</p>
     </div>
-    <div class="flex gap-2 mb-2">
-      <button id="star-btn" class="bg-[#1e2c3a] border border-[#2a3f55] hover:border-[#8fa3b3] text-[#e2a829] font-bold px-3 py-2 rounded text-sm transition-colors">★</button>
-      <input id="skin-input" type="text" placeholder="★ M9 Bayonet | Scorched (Field-Tested)"
-        class="flex-1 bg-[#1e2c3a] border border-[#2a3f55] focus:border-[#e2a829] text-[#e8edf2] placeholder-[#4a6070] px-3 py-2 rounded outline-none text-sm transition-colors"/>
-      <button id="add-btn" class="bg-[#e2a829] hover:bg-[#c99424] text-black font-bold px-4 py-2 rounded text-sm transition-colors">+ Add</button>
+
+    <div style="background:rgba(30,41,59,0.5);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px">
+      <div class="section-label">Add Skin</div>
+      <div style="display:flex;gap:8px">
+        <button id="star-btn" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:#F59E0B;font-weight:800;font-size:14px;padding:9px 14px;border-radius:8px;cursor:pointer;transition:all var(--transition);flex-shrink:0" onmouseover="this.style.background='rgba(245,158,11,0.2)'" onmouseout="this.style.background='rgba(245,158,11,0.1)'">★</button>
+        <input class="cs-input" id="skin-input" type="text" placeholder="★ M9 Bayonet | Scorched (Field-Tested)" style="flex:1"/>
+        <button id="add-btn" class="btn btn-primary" style="flex-shrink:0">+ Add Skin</button>
+      </div>
+      <p style="font-size:11px;color:var(--text-3);margin-top:10px">Knives and gloves require the ★ prefix — click ★ to insert it.</p>
     </div>
-    <p class="text-[11px] text-[#8fa3b3] mb-5">Knives and gloves require the ★ prefix — click ★ to insert it.</p>
+
+    <div class="section-label">Tracked Skins</div>
     <div id="watchlist-items"></div>
   </div>
 
-  <!-- ── History ─────────────────────────────────────────────── -->
-  <div id="history" class="page hidden">
-    <div class="mb-5">
-      <h1 class="text-lg font-bold">Report History</h1>
-      <p class="text-xs text-[#8fa3b3] mt-1">Click a date to view the full report</p>
+  <!-- ════════ History ════════ -->
+  <div id="history" class="page">
+    <div style="padding:28px 0 20px">
+      <h1 style="font-size:20px;font-weight:800;margin-bottom:4px">Report History</h1>
+      <p style="color:var(--text-2);font-size:13px">Click any row to view the full report</p>
     </div>
-    <div class="bg-[#1e2c3a] border border-[#2a3f55] rounded-lg overflow-hidden mb-5">
-      <table class="w-full">
+
+    <div style="background:rgba(30,41,59,0.5);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px">
+      <table class="data-table">
         <thead>
-          <tr class="bg-[#243447]">
-            <th class="text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#8fa3b3]">Date</th>
-            <th class="text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#8fa3b3]">Skins</th>
-            <th class="text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#8fa3b3]">Buy</th>
-            <th class="text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#8fa3b3]">Hold</th>
-            <th class="text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#8fa3b3]">Sell</th>
+          <tr>
+            <th>Date</th><th>Skins</th><th>Buy</th><th>Hold</th><th>Sell</th>
           </tr>
         </thead>
         <tbody id="history-tbody"></tbody>
       </table>
     </div>
-    <div id="detail-drawer" class="hidden">
-      <div class="font-bold text-base mb-4" id="detail-title"></div>
-      <div class="bg-[#1e2c3a] border border-[#2a3f55] rounded-lg p-5 mb-5">
+
+    <div id="detail-drawer" style="display:none">
+      <div style="font-size:15px;font-weight:700;margin-bottom:16px" id="detail-title"></div>
+      <div class="chart-card" style="margin-bottom:20px">
         <canvas id="price-chart" height="90"></canvas>
       </div>
-      <div id="detail-cards" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>
+      <div class="cards-grid" id="detail-cards"></div>
     </div>
   </div>
 
 </div><!-- /max-w -->
 
 <script>
+/* ── State ───────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
 let priceChart = null;
 let currentSkins = [];
 let currentFilter = 'all';
 
-// ── Navigation ───────────────────────────────────────────────
+/* ── Navigation ──────────────────────────────────────────────── */
 function showPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
-  document.querySelectorAll('.nav-btn').forEach(b => {
-    b.classList.remove('text-white', 'bg-[#243447]');
-    b.classList.add('text-[#8fa3b3]');
-  });
-  $(name)?.classList.remove('hidden');
-  document.querySelectorAll(`.nav-btn[data-page="${name}"]`).forEach(b => {
-    b.classList.add('text-white', 'bg-[#243447]');
-    b.classList.remove('text-[#8fa3b3]');
-  });
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+  $(name)?.classList.add('active');
+  document.querySelectorAll(`.nav-link[data-page="${name}"]`).forEach(b => b.classList.add('active'));
 }
-document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showPage(b.dataset.page)));
-showPage('dashboard');
+document.querySelectorAll('.nav-link').forEach(b => b.addEventListener('click', () => showPage(b.dataset.page)));
 
-// ── API ──────────────────────────────────────────────────────
+/* ── API ─────────────────────────────────────────────────────── */
 async function api(method, path, body) {
   const r = await fetch('/api' + path, {
     method,
@@ -166,98 +485,140 @@ async function api(method, path, body) {
   return r.json();
 }
 
-// ── Helpers ──────────────────────────────────────────────────
+/* ── Formatters ──────────────────────────────────────────────── */
 const fPrice = v => v != null ? `$${v.toFixed(2)}` : 'N/A';
+const fPct   = v => v != null ? `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` : null;
 
-function wearShort(wear) {
+function wearInfo(wear) {
   const w = (wear || '').toLowerCase();
-  if (w.includes('factory new'))    return ['FN', 'bg-green-500 text-black'];
-  if (w.includes('minimal wear'))   return ['MW', 'bg-cyan-400 text-black'];
-  if (w.includes('field-tested'))   return ['FT', 'bg-yellow-400 text-black'];
-  if (w.includes('well-worn'))      return ['WW', 'bg-orange-400 text-black'];
-  if (w.includes('battle-scarred')) return ['BS', 'bg-red-500 text-white'];
-  return [wear?.slice(0,2)?.toUpperCase() || '??', 'bg-gray-500 text-white'];
+  if (w.includes('factory new'))    return ['FN', 'wear-FN'];
+  if (w.includes('minimal wear'))   return ['MW', 'wear-MW'];
+  if (w.includes('field-tested'))   return ['FT', 'wear-FT'];
+  if (w.includes('well-worn'))      return ['WW', 'wear-WW'];
+  if (w.includes('battle-scarred')) return ['BS', 'wear-BS'];
+  return [wear?.slice(0,2)?.toUpperCase() || '?', 'wear-UN'];
 }
 
-function signalBadge(signal) {
-  if (signal === 'BUY')  return 'text-green-400 border-green-500/40 bg-green-500/10';
-  if (signal === 'SELL') return 'text-red-400 border-red-500/40 bg-red-500/10';
-  return 'text-yellow-400 border-yellow-500/40 bg-yellow-500/10';
-}
-
-// ── BUFF-style skin card ─────────────────────────────────────
+/* ── Skin card ───────────────────────────────────────────────── */
 function skinCard(s) {
   const key = s.market_hash_name.replace(/[^a-z0-9]/gi, '_');
+  const [wearLabel, wearCls] = wearInfo(s.wear);
   const isKnife = s.market_hash_name.startsWith('★');
-  const [wearLabel, wearCls] = wearShort(s.wear);
   const floatVal = s.csfloat_avg_float ?? null;
   const chg7 = s.change_7d_pct;
-  const chg7txt = chg7 != null ? `${chg7 >= 0 ? '+' : ''}${chg7.toFixed(1)}%` : null;
-  const chg7cls = chg7 == null ? '' : chg7 >= 0 ? 'text-green-400' : 'text-red-400';
+  const chgTxt = fPct(chg7);
+  const chgColor = chg7 == null ? 'var(--text-3)' : chg7 >= 0 ? '#22C55E' : '#EF4444';
 
   return `
-  <div class="skin-card group bg-[#1e2c3a] border border-[#2a3f55] hover:border-[#4a6f90] rounded-lg overflow-hidden transition-all duration-150 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/40 cursor-pointer" data-signal="${s.signal}">
-    <!-- Image zone -->
-    <div class="relative bg-gradient-to-b from-[#131f2b] to-[#1a2c3d] h-32 flex items-center justify-center overflow-hidden px-3 py-2">
-      <span class="${wearCls} text-[9px] font-bold px-1.5 py-0.5 rounded absolute top-2 left-2 leading-none">${isKnife ? '★ ' : ''}${wearLabel}</span>
-      <span class="text-[9px] text-[#8fa3b3] bg-black/50 px-1.5 py-0.5 rounded absolute top-2 right-2 leading-none">${s.score}</span>
-      <div id="img-${key}" class="w-full h-full flex items-center justify-center">
-        <span class="text-4xl opacity-20">🔫</span>
+  <div class="skin-card" data-signal="${s.signal}" data-name="${s.market_hash_name.toLowerCase()}">
+    <div class="card-img-zone">
+      <span class="wear-badge ${wearCls}">${isKnife ? '★ ' : ''}${wearLabel}</span>
+      <span class="score-badge">${s.score}</span>
+      <div id="img-${key}" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;z-index:1">
+        <span style="font-size:40px;opacity:0.15">🔫</span>
       </div>
     </div>
-    <!-- Body -->
-    <div class="px-3 pt-2 pb-3">
+
+    <div style="padding:11px 12px 13px">
       ${floatVal != null ? `
-      <div class="relative h-[3px] rounded-full overflow-hidden mb-1.5 float-bar-gradient">
-        <div class="absolute top-[-3px] w-[2px] h-[9px] bg-white rounded-full shadow-md" style="left:${(floatVal*100).toFixed(1)}%"></div>
+      <div style="margin-bottom:6px">
+        <div class="float-bar-track">
+          <div class="float-marker" style="left:${(floatVal*100).toFixed(1)}%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:9.5px;color:var(--text-3)">
+          <span>Float</span>
+          <span style="color:var(--text-2);font-variant-numeric:tabular-nums">${floatVal.toFixed(6)}</span>
+        </div>
+      </div>` : `<div style="height:26px;margin-bottom:6px"></div>`}
+
+      <div style="font-size:11.5px;font-weight:500;color:#CBD5E1;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:9px" title="${s.market_hash_name}">
+        ${s.market_hash_name}
       </div>
-      <div class="flex justify-between text-[9px] text-[#8fa3b3] mb-1.5">
-        <span>Float</span><span class="text-[#e8edf2] font-mono">${floatVal.toFixed(6)}</span>
-      </div>` : `<div class="h-[22px] mb-1.5"></div>`}
-      <div class="text-[11px] font-medium text-[#c8d8e8] leading-tight truncate mb-2" title="${s.market_hash_name}">${s.market_hash_name}</div>
-      <div class="flex items-center justify-between">
-        <span class="text-[#e2a829] font-bold text-[13px]">${fPrice(s.current_price)}</span>
-        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded border ${signalBadge(s.signal)}">${s.signal}</span>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+        <span style="font-size:15px;font-weight:800;color:var(--gold);letter-spacing:-0.02em">${fPrice(s.current_price)}</span>
+        <span style="font-size:9.5px;font-weight:700;padding:3px 7px;border-radius:5px;letter-spacing:0.03em" class="sig-${s.signal}">${s.signal}</span>
       </div>
-      ${chg7txt ? `<div class="text-[10px] mt-1 ${chg7cls}">${chg7txt} <span class="text-[#8fa3b3]">7d</span></div>` : ''}
+
+      ${chgTxt ? `
+      <div style="margin-top:5px;font-size:10.5px;font-weight:600;color:${chgColor}">${chgTxt} <span style="color:var(--text-3);font-weight:400">7d</span></div>` : ''}
+
+      ${s.summary ? `
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(51,65,85,0.4);font-size:10.5px;color:var(--text-3);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
+        ${s.summary}
+      </div>` : ''}
     </div>
   </div>`;
 }
 
-// ── Dashboard ────────────────────────────────────────────────
+/* ── Skeleton cards ──────────────────────────────────────────── */
+function skeletonCard() {
+  return `
+  <div class="skin-card" style="pointer-events:none">
+    <div class="card-img-zone"><div class="skeleton" style="position:absolute;inset:0;opacity:0.5"></div></div>
+    <div style="padding:12px">
+      <div class="skeleton" style="height:9px;width:35%;margin-bottom:10px"></div>
+      <div class="skeleton" style="height:13px;width:85%;margin-bottom:6px"></div>
+      <div class="skeleton" style="height:13px;width:60%;margin-bottom:12px"></div>
+      <div style="display:flex;justify-content:space-between">
+        <div class="skeleton" style="height:18px;width:38%"></div>
+        <div class="skeleton" style="height:18px;width:20%"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── Dashboard ───────────────────────────────────────────────── */
 function filterCards(filter) {
   currentFilter = filter;
-  document.querySelectorAll('.skin-card').forEach(c => {
+  document.querySelectorAll('.skin-card:not([style*="pointer-events:none"])').forEach(c => {
     c.style.display = (filter === 'all' || c.dataset.signal === filter) ? '' : 'none';
   });
-  document.querySelectorAll('.filter-tab').forEach(t => {
-    const active = t.dataset.filter === filter;
-    t.classList.toggle('border-[#e2a829]', active);
-    t.classList.toggle('text-white', active);
-    t.classList.toggle('border-transparent', !active);
-    t.classList.toggle('text-[#8fa3b3]', !active);
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === filter);
+  });
+}
+
+function searchCards(query) {
+  const q = query.toLowerCase().trim();
+  document.querySelectorAll('.skin-card[data-name]').forEach(c => {
+    const matches = !q || c.dataset.name.includes(q);
+    const signalOk = currentFilter === 'all' || c.dataset.signal === currentFilter;
+    c.style.display = (matches && signalOk) ? '' : 'none';
   });
 }
 
 async function loadLatestReport() {
   const { dates } = await api('GET', '/reports');
-  if (!dates?.length) return;
-  $('report-date').textContent = `Last: ${dates[0]}`;
+  if (!dates?.length) {
+    $('cards-grid').innerHTML = `
+      <div style="grid-column:1/-1" class="empty">
+        <div class="empty-icon">🎮</div>
+        <h3>No reports yet</h3>
+        <p>Click <strong style="color:var(--text)">Run Analysis</strong> to analyze your watchlist and generate the first report.</p>
+      </div>`;
+    return;
+  }
+  $('report-date').textContent = `Last report: ${dates[0]}`;
   const report = await api('GET', `/reports/${dates[0]}`);
   renderDashboard(report);
 }
 
 function renderDashboard(report) {
   currentSkins = report.skins || [];
-  $('stat-total').textContent = currentSkins.length;
-  $('stat-buy').textContent   = currentSkins.filter(s => s.signal === 'BUY').length;
-  $('stat-hold').textContent  = currentSkins.filter(s => s.signal === 'HOLD').length;
-  $('stat-sell').textContent  = currentSkins.filter(s => s.signal === 'SELL').length;
+  const buy  = currentSkins.filter(s => s.signal === 'BUY').length;
+  const hold = currentSkins.filter(s => s.signal === 'HOLD').length;
+  const sell = currentSkins.filter(s => s.signal === 'SELL').length;
+
+  $('hero-buy').textContent  = buy;
+  $('hero-hold').textContent = hold;
+  $('hero-sell').textContent = sell;
 
   if (!currentSkins.length) {
-    $('cards-grid').innerHTML = '<div class="col-span-full text-center py-20 text-[#8fa3b3]"><div class="text-5xl mb-4 opacity-30">📭</div>No skins in this report.</div>';
+    $('cards-grid').innerHTML = `<div style="grid-column:1/-1" class="empty"><div class="empty-icon">📭</div><h3>No skins in this report</h3></div>`;
     return;
   }
+
   $('cards-grid').innerHTML = currentSkins.map(skinCard).join('');
   filterCards(currentFilter);
   loadSkinImages(currentSkins);
@@ -265,23 +626,25 @@ function renderDashboard(report) {
 
 loadLatestReport();
 
-// ── Skin images ──────────────────────────────────────────────
+/* ── Skin images ─────────────────────────────────────────────── */
 function loadSkinImages(skins) {
   for (const s of skins) {
     if (!s.image_url) continue;
     const key = s.market_hash_name.replace(/[^a-z0-9]/gi, '_');
     const el = document.getElementById(`img-${key}`);
     if (!el) continue;
-    el.innerHTML = `<img src="${s.image_url}" alt="${s.market_hash_name}" class="w-full h-full object-contain drop-shadow-lg"
-      onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'text-4xl opacity-20',textContent:'🔫'}))" />`;
+    el.innerHTML = `<img src="${s.image_url}" alt="${s.market_hash_name}"
+      style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5))"
+      onerror="this.replaceWith(Object.assign(document.createElement('span'),{style:'font-size:40px;opacity:0.15',textContent:'🔫'}))" />`;
   }
 }
 
-// ── Run button ───────────────────────────────────────────────
+/* ── Run button ──────────────────────────────────────────────── */
 let polling = null;
 $('run-btn').addEventListener('click', async () => {
   $('run-btn').disabled = true;
-  $('run-btn').textContent = '…';
+  $('run-btn').innerHTML = `<span style="display:inline-block;animation:pulse 0.8s infinite">…</span> Running`;
+  $('cards-grid').innerHTML = Array(5).fill(0).map(skeletonCard).join('');
   await api('POST', '/analyze/run');
   startPolling();
 });
@@ -291,32 +654,38 @@ function startPolling() {
   polling = setInterval(async () => {
     const { status } = await api('GET', '/analyze/status');
     if (status === 'running') {
-      $('status-dot').className = 'w-2 h-2 rounded-full bg-green-400 inline-block pulse';
+      $('status-dot').style.cssText = 'width:7px;height:7px;border-radius:50%;background:#22C55E;display:inline-block;flex-shrink:0';
+      $('status-dot').classList.add('pulse');
       $('status-label').textContent = 'Running…';
     } else {
-      $('status-dot').className = 'w-2 h-2 rounded-full bg-[#8fa3b3] inline-block';
+      $('status-dot').style.cssText = 'width:7px;height:7px;border-radius:50%;background:var(--text-3);display:inline-block;flex-shrink:0';
+      $('status-dot').classList.remove('pulse');
       $('status-label').textContent = 'Idle';
       clearInterval(polling); polling = null;
       $('run-btn').disabled = false;
-      $('run-btn').textContent = '▶ Run Analysis';
+      $('run-btn').innerHTML = '<svg width="11" height="11" viewBox="0 0 10 10" fill="currentColor"><path d="M1 1l8 4-8 4V1z"/></svg> Run Analysis';
       await loadLatestReport();
     }
   }, 3000);
 }
 
-// ── Watchlist ────────────────────────────────────────────────
+/* ── Watchlist ───────────────────────────────────────────────── */
 async function renderWatchlist() {
   const { skins } = await api('GET', '/watchlist');
   $('watchlist-items').innerHTML = skins.length
     ? skins.map(s => `
-        <div class="flex items-center justify-between px-4 py-3 bg-[#1e2c3a] border border-[#2a3f55] hover:border-[#4a6f90] rounded-lg mb-2 transition-colors">
-          <span class="text-sm font-medium">${s}</span>
-          <button class="btn-danger text-[11px] font-semibold text-red-400 border border-red-500/30 hover:bg-red-500/10 px-2.5 py-1 rounded transition-colors" data-skin="${s}">Remove</button>
+        <div class="watchlist-row">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px;opacity:0.5">${s.startsWith('★') ? '🔪' : '🔫'}</span>
+            <span style="font-size:13.5px;font-weight:500">${s}</span>
+          </div>
+          <button class="btn btn-danger btn-sm" style="padding:5px 12px;font-size:11.5px" data-skin="${s}">Remove</button>
         </div>`).join('')
-    : '<div class="text-center py-16 text-[#8fa3b3]"><div class="text-5xl mb-4 opacity-30">⭐</div>Add skins above to start tracking them.</div>';
+    : `<div class="empty"><div class="empty-icon">⭐</div><h3>No skins tracked</h3><p>Add skins above to start tracking them in every analysis run.</p></div>`;
 
   document.querySelectorAll('.btn-danger').forEach(btn => {
     btn.addEventListener('click', async () => {
+      btn.textContent = '…';
       await api('DELETE', `/watchlist/${encodeURIComponent(btn.dataset.skin)}`);
       renderWatchlist();
     });
@@ -332,18 +701,20 @@ $('star-btn').addEventListener('click', () => {
 $('add-btn').addEventListener('click', async () => {
   const val = $('skin-input').value.trim();
   if (!val) return;
+  $('add-btn').textContent = '…';
   await api('POST', '/watchlist', { market_hash_name: val });
   $('skin-input').value = '';
+  $('add-btn').textContent = '+ Add Skin';
   renderWatchlist();
 });
 $('skin-input').addEventListener('keydown', e => { if (e.key === 'Enter') $('add-btn').click(); });
 
-// ── History ──────────────────────────────────────────────────
+/* ── History ─────────────────────────────────────────────────── */
 async function renderHistory() {
   const { dates } = await api('GET', '/reports');
   const tbody = $('history-tbody');
   if (!dates?.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-[#8fa3b3]">No reports yet</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-3)">No reports yet</td></tr>';
     return;
   }
   const rows = await Promise.all(dates.map(async d => {
@@ -351,12 +722,12 @@ async function renderHistory() {
     return { d, skins: r.skins || [] };
   }));
   tbody.innerHTML = rows.map(({ d, skins }) => `
-    <tr class="border-t border-[#2a3f55] hover:bg-[#243447] cursor-pointer transition-colors" data-date="${d}">
-      <td class="px-4 py-3 font-semibold">${d}</td>
-      <td class="px-4 py-3 text-[#8fa3b3]">${skins.length}</td>
-      <td class="px-4 py-3 font-semibold text-green-400">${skins.filter(s=>s.signal==='BUY').length}</td>
-      <td class="px-4 py-3 font-semibold text-yellow-400">${skins.filter(s=>s.signal==='HOLD').length}</td>
-      <td class="px-4 py-3 font-semibold text-red-400">${skins.filter(s=>s.signal==='SELL').length}</td>
+    <tr data-date="${d}">
+      <td style="font-weight:600">${d}</td>
+      <td style="color:var(--text-2)">${skins.length}</td>
+      <td style="font-weight:700;color:#22C55E">${skins.filter(s=>s.signal==='BUY').length}</td>
+      <td style="font-weight:700;color:#F59E0B">${skins.filter(s=>s.signal==='HOLD').length}</td>
+      <td style="font-weight:700;color:#EF4444">${skins.filter(s=>s.signal==='SELL').length}</td>
     </tr>`).join('');
 
   tbody.querySelectorAll('tr').forEach(row => {
@@ -369,7 +740,7 @@ async function loadHistoryDetail(d) {
   const report = await api('GET', `/reports/${d}`);
   const skins = report.skins || [];
   const drawer = $('detail-drawer');
-  drawer.classList.remove('hidden');
+  drawer.style.display = 'block';
   $('detail-title').textContent = `Report — ${d}`;
 
   if (priceChart) priceChart.destroy();
@@ -381,26 +752,26 @@ async function loadHistoryDetail(d) {
         {
           label: 'Price (USD)',
           data: skins.map(s => s.current_price || 0),
-          backgroundColor: skins.map(s => s.signal==='BUY' ? 'rgba(74,222,128,0.35)' : s.signal==='SELL' ? 'rgba(248,113,113,0.35)' : 'rgba(250,204,21,0.3)'),
-          borderColor:     skins.map(s => s.signal==='BUY' ? '#4ade80' : s.signal==='SELL' ? '#f87171' : '#facc15'),
-          borderWidth: 1, yAxisID: 'y',
+          backgroundColor: skins.map(s => s.signal==='BUY' ? 'rgba(34,197,94,0.3)' : s.signal==='SELL' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.25)'),
+          borderColor:     skins.map(s => s.signal==='BUY' ? '#22C55E' : s.signal==='SELL' ? '#EF4444' : '#F59E0B'),
+          borderWidth: 1, borderRadius: 4, yAxisID: 'y',
         },
         {
           label: 'Score', type: 'line',
           data: skins.map(s => s.score),
-          borderColor: '#e2a829', backgroundColor: 'rgba(226,168,41,0.08)',
-          pointBackgroundColor: '#e2a829', pointRadius: 4,
-          fill: true, tension: 0.35, yAxisID: 'y1',
+          borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.08)',
+          pointBackgroundColor: '#3B82F6', pointRadius: 5, pointBorderColor: '#fff', pointBorderWidth: 1.5,
+          fill: true, tension: 0.4, yAxisID: 'y1',
         },
       ],
     },
     options: {
       responsive: true,
-      plugins: { legend: { labels: { color: '#8fa3b3', font: { size: 11 } } } },
+      plugins: { legend: { labels: { color: '#64748B', font: { family: 'Inter', size: 11 } } } },
       scales: {
-        y:  { ticks: { color: '#8fa3b3', callback: v => `$${v}` }, grid: { color: '#243447' } },
-        y1: { position: 'right', min: 0, max: 100, ticks: { color: '#8fa3b3' }, grid: { drawOnChartArea: false } },
-        x:  { ticks: { color: '#8fa3b3' }, grid: { color: '#243447' } },
+        y:  { ticks: { color: '#64748B', callback: v => `$${v}`, font: { size: 11 } }, grid: { color: 'rgba(51,65,85,0.4)' } },
+        y1: { position: 'right', min: 0, max: 100, ticks: { color: '#64748B', font: { size: 11 } }, grid: { drawOnChartArea: false } },
+        x:  { ticks: { color: '#64748B', font: { size: 11 } }, grid: { color: 'rgba(51,65,85,0.2)' } },
       },
     },
   });

@@ -6,12 +6,12 @@ AI-powered CS2 skin price tracker. Pulls market data from Steam, CSFloat, Skinpo
 
 <table>
   <tr>
-    <td><img src="https://cdn.discordapp.com/attachments/1512542345646571614/1512916402271424605/image.png?ex=6a25d4b2&is=6a248332&hm=3ff0893c18dddc08d86320c64499861a95b666ce25703001d88285be029b8193&"/></td>
-    <td><img src="https://cdn.discordapp.com/attachments/1512542345646571614/1512916479958581268/image.png?ex=6a25d4c5&is=6a248345&hm=6d20ebacf5ce3dca146c513f493186154d9c0db1111dcbf79c389cc4462ac9d6&" alt="Watchlist"/></td>
+    <td><img src="screenshots/main%20page.png" alt="Main page"/></td>
+    <td><img src="screenshots/watchlistpage.png" alt="Watchlist"/></td>
   </tr>
   <tr>
-    <td><img src="https://cdn.discordapp.com/attachments/1512542345646571614/1512916596178424019/image.png?ex=6a25d4e1&is=6a248361&hm=c6c94612603dcd08bdb5119c9dfd634cd8824b74767075c2e36ae0fd541952d9&" alt="History"/></td>
-    <td><img src="https://cdn.discordapp.com/attachments/1512542345646571614/1512916711635161288/image.png?ex=6a25d4fc&is=6a24837c&hm=82cb77909986a7870f024ed3e2caf81d7a43fd67d281cc7dc42d07ddd2c07fdf&" alt="Discord notification"/></td>
+    <td><img src="screenshots/history.png" alt="History"/></td>
+    <td><img src="screenshots/discord%20noti.png" alt="Discord notification"/></td>
   </tr>
 </table>
 

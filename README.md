@@ -6,8 +6,16 @@ AI-powered CS2 skin price tracker. Pulls market data from Steam, CSFloat, Skinpo
 
 <table>
   <tr>
+    <td align="center"><b>Dashboard</b></td>
+    <td align="center"><b>Watchlist</b></td>
+  </tr>
+  <tr>
     <td><img src="screenshots/main%20page.png" alt="Main page"/></td>
     <td><img src="screenshots/watchlistpage.png" alt="Watchlist"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Price History</b></td>
+    <td align="center"><b>Discord Notification</b></td>
   </tr>
   <tr>
     <td><img src="screenshots/history.png" alt="History"/></td>
